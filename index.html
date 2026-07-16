@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Disaster Wordle Clone</title>
+    <style>
+        :root {
+            --bg-color: #121213;
+            --text-color: #ffffff;
+            --empty-border: #3a3a3c;
+            --filled-border: #565758;
+            --correct: #538d4e;
+            --present: #b59f3b;
+            --absent: #3a3a3c;
+            --key-bg: #818384;
+            --modal-bg: #1e1e1e;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: 'Clear Sans', 'Helvetica Neue', Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 0;
+            height: 100vh;
+            justify-content: space-between;
+        }
+
+        header {
+            width: 100%;
+            text-align: center;
+            padding: 10px 0;
+            border-bottom: 1px solid var(--empty-border);
+            font-size: 24px;
+            font-weight: bold;
+            letter-spacing: 2px;
+        }
+
+        #board-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-grow: 1;
+            padding: 10px;
+        }
+
+        #board {
+            display: grid;
+            grid-template-rows: repeat(6, 1fr);
+            grid-gap: 5px;
+        }
+
+        .row {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            grid-gap: 5px;
+        }
+
+        .tile {
+            width: 60px;
+            height: 60px;
+            border: 2px solid var(--empty-border);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 2rem;
+            font-weight: bold;
+            text-transform: uppercase;
+            box-sizing: border-box;
+        }
+
+        .tile.active { border-color: var(--filled-border); }
+        .tile.correct { background-color: var(--correct); border-color: var(--correct); }
+        .tile.present { background-color: var(--present); border-color: var(--present); }
+        .tile.absent { background-color: var(--absent); border-color: var(--absent); }
+
+        #keyboard {
+            width: 100%;
+            max-width: 500px;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-bottom: 20px;
+        }
+
+        .keyboard-row {
+            display: flex;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .key {
+            background-color: var(--key-bg);
+            color: var(--text-color);
+            border: none;
+            border-radius: 4px;
+            padding: 15px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            flex: 1;
+            text-transform: uppercase;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            user-select: none;
+        }
+
+        .key.large { flex: 1.5; font-size: 12px; }
+        .key.correct { background-color: var(--correct); }
+        .key.present { background-color: var(--present); }
+        .key.absent { background-color: var(--absent); }
+
+        /* Modal Styles */
+        #modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .modal-content {
+            background-color: var(--modal-bg);
+            padding: 30px;
+            border-radius: 8px;
+            text-align: center;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            max-width: 300px;
+            width: 100%;
+        }
+
+        .modal-content h2 { margin-top: 0; }
+        
+        #share-btn {
+            background-color: var(--correct);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            font-size: 16px;
+            font-weight: bold;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-top: 20px;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+        }
+
+        #share-btn:hover { opacity: 0.9; }
+    </style>
+</head>
+<body>
+
+    <header>DISASTER WORDLE</header>
+
+    <div id="board-container">
+        <div id="board"></div>
+    </div>
+
+    <div id="keyboard">
+        <!-- Keyboard HTML remains identical -->
+        <div class="keyboard-row">
+            <button class="key" data-key="Q">Q</button>
+            <button class="key" data-key="W">W</button>
+            <button class="key" data-key="E">E</button>
+            <button class="key" data-key="R">R</button>
+            <button class="key" data-key="T">T</button>
+            <button class="key" data-key="Y">Y</button>
+            <button class="key" data-key="U">U</button>
+            <button class="key" data-key="I">I</button>
+            <button class="key" data-key="O">O</button>
+            <button class="key" data-key="P">P</button>
+        </div>
+        <div class="keyboard-row">
+            <button class="key" data-key="A">A</button>
+            <button class="key" data-key="S">S</button>
+            <button class="key" data-key="D">D</button>
+            <button class="key" data-key="F">F</button>
+            <button class="key" data-key="G">G</button>
+            <button class="key" data-key="H">H</button>
+            <button class="key" data-key="J">J</button>
+            <button class="key" data-key="K">K</button>
+            <button class="key" data-key="L">L</button>
+        </div>
+        <div class="keyboard-row">
+            <button class="key large" data-key="ENTER">ENTER</button>
+            <button class="key" data-key="Z">Z</button>
+            <button class="key" data-key="X">X</button>
+            <button class="key" data-key="C">C</button>
+            <button class="key" data-key="V">V</button>
+            <button class="key" data-key="B">B</button>
+            <button class="key" data-key="N">N</button>
+            <button class="key" data-key="M">M</button>
+            <button class="key large" data-key="BACKSPACE">⌫</button>
+        </div>
+    </div>
+
+    <!-- Results Modal -->
+    <div id="modal">
+        <div class="modal-content">
+            <h2 id="modal-title">Game Over</h2>
+            <p id="modal-message"></p>
+            <button id="share-btn">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>
+                Share Result
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // Dictionary of words extracted from the PPT
+        const wordList = [
+            "SCALE", "EVENT", "STATE", "TYPES", "EARTH", 
+            "SOLID", "WATER", "CYCLE", "FIRES", "GERMS", 
+            "TOXIN", "SPILL", "CRASH", "MAJOR", "CRIME", 
+            "ARSON", "LOCAL", "RAPID"
+        ];
+        
+        // Select a random word on load
+        const targetWord = wordList[Math.floor(Math.random() * wordList.length)];
+        
+        const numGuesses = 6;
+        const wordLength = 5;
+        let guesses = Array.from({ length: numGuesses }, () => "");
+        let currentGuessIndex = 0;
+        let gameOver = false;
+        let gameWon = false;
+
+        const board = document.getElementById("board");
+
+        // Initialize Board
+        for (let i = 0; i < numGuesses; i++) {
+            const row = document.createElement("div");
+            row.className = "row";
+            for (let j = 0; j < wordLength; j++) {
+                const tile = document.createElement("div");
+                tile.className = "tile";
+                tile.id = `tile-${i}-${j}`;
+                row.appendChild(tile);
+            }
+            board.appendChild(row);
+        }
+
+        // Update UI
+        function updateBoard() {
+            for (let i = 0; i < numGuesses; i++) {
+                for (let j = 0; j < wordLength; j++) {
+                    const tile = document.getElementById(`tile-${i}-${j}`);
+                    tile.textContent = guesses[i][j] || "";
+                    if (guesses[i][j]) {
+                        tile.classList.add("active");
+                    } else {
+                        tile.classList.remove("active");
+                    }
+                }
+            }
+        }
+
+        function handleInput(key) {
+            if (gameOver) return;
+
+            const currentGuess = guesses[currentGuessIndex];
+
+            if (key === "ENTER") {
+                if (currentGuess.length === wordLength) {
+                    checkGuess();
+                } else {
+                    alert("Not enough letters");
+                }
+            } else if (key === "BACKSPACE") {
+                guesses[currentGuessIndex] = currentGuess.slice(0, -1);
+            } else if (/^[A-Z]$/.test(key) && currentGuess.length < wordLength) {
+                guesses[currentGuessIndex] += key;
+            }
+            updateBoard();
+        }
+
+        function checkGuess() {
+            const guess = guesses[currentGuessIndex];
+            const targetArray = targetWord.split("");
+            const guessArray = guess.split("");
+            const tileColors = Array(wordLength).fill("absent");
+
+            // First pass: find exact matches (Green)
+            for (let i = 0; i < wordLength; i++) {
+                if (guessArray[i] === targetArray[i]) {
+                    tileColors[i] = "correct";
+                    targetArray[i] = null; 
+                }
+            }
+
+            // Second pass: find present but wrong location (Yellow)
+            for (let i = 0; i < wordLength; i++) {
+                if (tileColors[i] !== "correct" && targetArray.includes(guessArray[i])) {
+                    tileColors[i] = "present";
+                    targetArray[targetArray.indexOf(guessArray[i])] = null;
+                }
+            }
+
+            // Apply styles to tiles and keyboard
+            for (let i = 0; i < wordLength; i++) {
+                const tile = document.getElementById(`tile-${currentGuessIndex}-${i}`);
+                tile.classList.add(tileColors[i]);
+                
+                const keyBtn = document.querySelector(`.key[data-key="${guessArray[i]}"]`);
+                if (keyBtn) {
+                    if (tileColors[i] === 'correct' || (tileColors[i] === 'present' && !keyBtn.classList.contains('correct'))) {
+                        keyBtn.classList.remove('present', 'absent');
+                        keyBtn.classList.add(tileColors[i]);
+                    } else if (tileColors[i] === 'absent' && !keyBtn.classList.contains('correct') && !keyBtn.classList.contains('present')) {
+                        keyBtn.classList.add('absent');
+                    }
+                }
+            }
+
+            if (guess === targetWord) {
+                gameWon = true;
+                gameOver = true;
+                setTimeout(() => showModal("You win!", `Great job finding the word!`), 500);
+            } else if (currentGuessIndex === numGuesses - 1) {
+                gameOver = true;
+                setTimeout(() => showModal("Game Over", `The word was ${targetWord}`), 500);
+            } else {
+                currentGuessIndex++;
+            }
+        }
+
+        // Show Modal and Share Logic
+        function showModal(title, message) {
+            document.getElementById("modal-title").innerText = title;
+            document.getElementById("modal-message").innerText = message;
+            document.getElementById("modal").style.display = "flex";
+        }
+
+        document.getElementById("share-btn").addEventListener("click", () => {
+            const attemptCount = gameWon ? currentGuessIndex + 1 : 'X';
+            let shareText = `Disaster Wordle ${attemptCount}/6\n\n`;
+            
+            const rowsToShare = gameWon ? currentGuessIndex + 1 : numGuesses;
+            
+            for (let i = 0; i < rowsToShare; i++) {
+                let rowString = "";
+                for (let j = 0; j < wordLength; j++) {
+                    const tile = document.getElementById(`tile-${i}-${j}`);
+                    if (tile.classList.contains("correct")) rowString += "🟩";
+                    else if (tile.classList.contains("present")) rowString += "🟨";
+                    else rowString += "⬛";
+                }
+                shareText += rowString + "\n";
+            }
+
+            if (navigator.clipboard) {
+                navigator.clipboard.writeText(shareText).then(() => {
+                    const btn = document.getElementById("share-btn");
+                    const originalText = btn.innerHTML;
+                    btn.innerText = "Copied to Clipboard!";
+                    setTimeout(() => { btn.innerHTML = originalText; }, 2000);
+                }).catch(err => {
+                    alert("Copy this text manually:\n\n" + shareText);
+                });
+            } else {
+                alert("Copy this text manually:\n\n" + shareText);
+            }
+        });
+
+        // Event Listeners
+        document.querySelectorAll(".key").forEach(button => {
+            button.addEventListener("click", () => {
+                handleInput(button.dataset.key);
+            });
+        });
+
+        document.addEventListener("keydown", (e) => {
+            let key = e.key.toUpperCase();
+            if (e.key === "Enter") key = "ENTER";
+            if (e.key === "Backspace") key = "BACKSPACE";
+            handleInput(key);
+        });
+    </script>
+</body>
+</html>
