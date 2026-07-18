@@ -2,8 +2,8 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Disaster Wordle Clone</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0">
+    <title>Disaster Evaluation Wordle</title>
     <style>
         :root {
             --bg-color: #121213;
@@ -17,6 +17,10 @@
             --modal-bg: #1e1e1e;
         }
 
+        * {
+            box-sizing: border-box;
+        }
+
         body {
             background-color: var(--bg-color);
             color: var(--text-color);
@@ -27,6 +31,7 @@
             margin: 0;
             height: 100vh;
             justify-content: space-between;
+            overflow-x: hidden;
         }
 
         header {
@@ -39,37 +44,66 @@
             letter-spacing: 2px;
         }
 
+        #clue-container {
+            width: 90%;
+            max-width: 600px;
+            background-color: #2a2a2a;
+            padding: 15px;
+            margin-top: 15px;
+            border-radius: 8px;
+            border-left: 5px solid var(--present);
+            text-align: center;
+            font-size: clamp(14px, 4vw, 16px);
+            line-height: 1.4;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+        }
+
+        #clue-label {
+            font-weight: bold;
+            color: var(--present);
+            text-transform: uppercase;
+            font-size: 12px;
+            letter-spacing: 1px;
+            margin-bottom: 5px;
+            display: block;
+        }
+
         #board-container {
             display: flex;
             justify-content: center;
             align-items: center;
             flex-grow: 1;
             padding: 10px;
+            width: 100%;
+            overflow: hidden;
         }
 
         #board {
-            display: grid;
-            grid-template-rows: repeat(6, 1fr);
-            grid-gap: 5px;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            width: 100%;
+            max-width: 600px;
         }
 
         .row {
-            display: grid;
-            grid-template-columns: repeat(5, 1fr);
-            grid-gap: 5px;
+            display: flex;
+            justify-content: center;
+            gap: 4px;
+            width: 100%;
         }
 
         .tile {
-            width: 60px;
-            height: 60px;
+            /* Adjusted to safely fit up to 10+ letters across a mobile screen */
+            width: clamp(22px, 8vw, 55px);
+            height: clamp(24px, 8.5vw, 55px);
             border: 2px solid var(--empty-border);
             display: flex;
             justify-content: center;
             align-items: center;
-            font-size: 2rem;
+            font-size: clamp(1rem, 5vw, 2rem);
             font-weight: bold;
             text-transform: uppercase;
-            box-sizing: border-box;
         }
 
         .tile.active { border-color: var(--filled-border); }
@@ -79,18 +113,18 @@
 
         #keyboard {
             width: 100%;
-            max-width: 500px;
-            padding: 10px;
+            max-width: 600px;
+            padding: 5px 8px 15px 8px; /* Reduced edge padding */
             display: flex;
             flex-direction: column;
-            gap: 8px;
-            margin-bottom: 20px;
+            gap: 6px;
         }
 
         .keyboard-row {
             display: flex;
             justify-content: center;
-            gap: 6px;
+            gap: 4px; /* Reduced gap between keys */
+            width: 100%;
         }
 
         .key {
@@ -98,19 +132,25 @@
             color: var(--text-color);
             border: none;
             border-radius: 4px;
-            padding: 15px;
-            font-size: 14px;
+            height: 50px; /* Use fixed height instead of heavy padding */
+            padding: 0; /* Remove internal padding to prevent overflow */
+            font-size: clamp(11px, 3.5vw, 14px);
             font-weight: bold;
             cursor: pointer;
-            flex: 1;
+            flex: 1; /* Automatically distribute width */
             text-transform: uppercase;
             display: flex;
             justify-content: center;
             align-items: center;
             user-select: none;
+            touch-action: manipulation; /* Prevents double-tap zoom on mobile */
         }
 
-        .key.large { flex: 1.5; font-size: 12px; }
+        .key.large { 
+            flex: 1.5; 
+            font-size: clamp(9px, 3vw, 12px); 
+        }
+        
         .key.correct { background-color: var(--correct); }
         .key.present { background-color: var(--present); }
         .key.absent { background-color: var(--absent); }
@@ -132,8 +172,8 @@
             border-radius: 8px;
             text-align: center;
             box-shadow: 0 4px 6px rgba(0,0,0,0.3);
-            max-width: 300px;
-            width: 100%;
+            max-width: 90%;
+            width: 320px;
         }
 
         .modal-content h2 { margin-top: 0; }
@@ -160,14 +200,18 @@
 </head>
 <body>
 
-    <header>DISASTER WORDLE</header>
+    <header>DISASTER EVALUATION</header>
+
+    <div id="clue-container">
+        <span id="clue-label">Evaluation Clue</span>
+        <span id="clue-text"></span>
+    </div>
 
     <div id="board-container">
         <div id="board"></div>
     </div>
 
     <div id="keyboard">
-        <!-- Keyboard HTML remains identical -->
         <div class="keyboard-row">
             <button class="key" data-key="Q">Q</button>
             <button class="key" data-key="W">W</button>
@@ -207,7 +251,7 @@
     <!-- Results Modal -->
     <div id="modal">
         <div class="modal-content">
-            <h2 id="modal-title">Game Over</h2>
+            <h2 id="modal-title">Assessment Complete</h2>
             <p id="modal-message"></p>
             <button id="share-btn">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>
@@ -217,27 +261,44 @@
     </div>
 
     <script>
-        // Dictionary of words extracted from the PPT
-        const wordList = [
-            "SCALE", "EVENT", "STATE", "TYPES", "EARTH", 
-            "SOLID", "WATER", "CYCLE", "FIRES", "GERMS", 
-            "TOXIN", "SPILL", "CRASH", "MAJOR", "CRIME", 
-            "ARSON", "LOCAL", "RAPID"
+        // 15 Concepts extracted directly from the Disaster Management presentation
+        const learningData = [
+            { word: "DISASTER", clue: "A sudden, calamitous event causing large-scale destruction and outstripping community coping capacity." },
+            { word: "NATURAL", clue: "One of the two main classifications of disasters, alongside man-made." },
+            { word: "CYCLONE", clue: "A meteorological disaster characterized by inward spiraling winds." },
+            { word: "TSUNAMI", clue: "A hydrological disaster involving massive, destructive ocean waves." },
+            { word: "DROUGHT", clue: "A climatological disaster involving prolonged periods of low precipitation." },
+            { word: "BIOLOGICAL", clue: "Type of hazard involving exposure to germs, toxins, epidemics, and pandemics." },
+            { word: "NATIONAL", clue: "A disaster scale paralyzing a whole country." },
+            { word: "CASUALTY", clue: "A Mass ________ Incident generates more patients than local resources can manage." },
+            { word: "RECOVERY", clue: "In catastrophic scenarios, this depends entirely on the rapid infusion of state or international aid." },
+            { word: "LOCAL", clue: "The scale of a disaster affecting a specific neighborhood or community." },
+            { word: "ARSON", clue: "A sociological hazard involving the criminal act of deliberately setting fire to property." },
+            { word: "GLOBAL", clue: "The scale of a disaster that affects multiple countries or the entire planet." },
+            { word: "TOXINS", clue: "Biological hazards include exposure to germs and _______." },
+            { word: "EARTHQUAKE", clue: "A geophysical event measured by the moment magnitude scale." },
+            { word: "MANMADE", clue: "Disasters resulting from technological failures, hazardous materials, or sociological hazards." }
         ];
         
-        // Select a random word on load
-        const targetWord = wordList[Math.floor(Math.random() * wordList.length)];
+        // Select a random object on load
+        const selectedQuestion = learningData[Math.floor(Math.random() * learningData.length)];
+        const targetWord = selectedQuestion.word;
+        const targetClue = selectedQuestion.clue;
         
         const numGuesses = 6;
-        const wordLength = 5;
+        const wordLength = targetWord.length; // Dynamic length assignment
+        
         let guesses = Array.from({ length: numGuesses }, () => "");
         let currentGuessIndex = 0;
         let gameOver = false;
         let gameWon = false;
 
+        // Inject Clue
+        document.getElementById("clue-text").innerText = targetClue;
+
         const board = document.getElementById("board");
 
-        // Initialize Board
+        // Initialize Dynamic Board
         for (let i = 0; i < numGuesses; i++) {
             const row = document.createElement("div");
             row.className = "row";
@@ -274,7 +335,7 @@
                 if (currentGuess.length === wordLength) {
                     checkGuess();
                 } else {
-                    alert("Not enough letters");
+                    alert(`Not enough letters. Word is ${wordLength} letters long.`);
                 }
             } else if (key === "BACKSPACE") {
                 guesses[currentGuessIndex] = currentGuess.slice(0, -1);
@@ -325,10 +386,10 @@
             if (guess === targetWord) {
                 gameWon = true;
                 gameOver = true;
-                setTimeout(() => showModal("You win!", `Great job finding the word!`), 500);
+                setTimeout(() => showModal("Correct!", `Excellent work analyzing the clue.`), 500);
             } else if (currentGuessIndex === numGuesses - 1) {
                 gameOver = true;
-                setTimeout(() => showModal("Game Over", `The word was ${targetWord}`), 500);
+                setTimeout(() => showModal("Assessment Complete", `The correct answer was ${targetWord}`), 500);
             } else {
                 currentGuessIndex++;
             }
@@ -343,7 +404,7 @@
 
         document.getElementById("share-btn").addEventListener("click", () => {
             const attemptCount = gameWon ? currentGuessIndex + 1 : 'X';
-            let shareText = `Disaster Wordle ${attemptCount}/6\n\n`;
+            let shareText = `Disaster Evaluation ${attemptCount}/6\n\n`;
             
             const rowsToShare = gameWon ? currentGuessIndex + 1 : numGuesses;
             
